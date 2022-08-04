@@ -4,6 +4,11 @@
 #include <rapidjson/rapidjson.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+#include <curlpp/cURLpp.hpp>
+#include <curlpp/Easy.hpp>
+#include <curlpp/Options.hpp>
+
+// using namespace curlpp::options;
 
 int main() {
     FILE* fp = fopen("config.json", "r");
@@ -18,6 +23,21 @@ int main() {
     }
 
     TgBot::Bot bot(document["BotSettings"]["Token"].GetString());
+
+    /*
+        That's all that is needed to do cleanup of the used resources (RAII style).
+        Our request to be sent.
+        Set the URL.
+        Send request and get a result.
+	    By default the result goes to standard output.
+    */
+
+	curlpp::Cleanup myCleanup;
+	curlpp::Easy myRequest;
+	myRequest.setOpt<curlpp::options::Url>("https://github.com/granny-owl/imdb_bot");
+	myRequest.perform();
+    
+    // os << myRequest; // next step
 
     bot.getEvents().onAnyMessage([&](TgBot::Message::Ptr msg_ptr) {
         std::string msg_txt = msg_ptr->text;
