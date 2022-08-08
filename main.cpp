@@ -7,6 +7,9 @@
 #include <curlpp/cURLpp.hpp>
 #include <curlpp/Easy.hpp>
 #include <curlpp/Options.hpp>
+#include <sstream>
+#include <string>
+#include <gumbo.h>
 
 // using namespace curlpp::options;
 
@@ -34,11 +37,12 @@ int main() {
 
 	curlpp::Cleanup myCleanup;
 	curlpp::Easy myRequest;
-	myRequest.setOpt<curlpp::options::Url>("https://github.com/granny-owl/imdb_bot");
+	myRequest.setOpt<curlpp::options::Url>("https://pubmed.ncbi.nlm.nih.gov/"); // check other setOpt options
 	myRequest.perform();
-    
-    // os << myRequest; // next step
 
+    std::stringstream ss; 
+    ss << myRequest; // works fine
+    
     bot.getEvents().onAnyMessage([&](TgBot::Message::Ptr msg_ptr) {
         std::string msg_txt = msg_ptr->text;
     });
