@@ -11,14 +11,37 @@
 #include <string>
 #include <gumbo.h>
 
-// using namespace curlpp::options;
+static void search_for_links(GumboNode* node) {
+    if (node->type != GUMBO_NODE_ELEMENT) {
+        return;
+    }
+
+    GumboAttribute* href;
+    if (node->v.element.tag == GUMBO_TAG_A &&
+    (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
+        std::cout << href->value << std::endl;
+    }
+
+    GumboVector* children = &node->v.element.children;
+    for (unsigned int i = 0; i < children->length; ++i) {
+        search_for_links(static_cast<GumboNode*>(children->data[i]));
+    }
+}
+
 
 int main() {
-    FILE* fp = fopen("config.json", "r");
-    char readbuffer[10000];
+    FILE* fp;
     rapidjson::Document document;
-    rapidjson::FileReadStream is(fp, readbuffer, sizeof(readbuffer) * sizeof(char));
-    rapidjson::ParseResult ok = document.ParseStream(is);
+    rapidjson::ParseResult ok;
+
+    try {
+        fp = fopen("config.json", "r");
+        char readbuffer[10000];
+        rapidjson::FileReadStream is(fp, readbuffer, sizeof(readbuffer) * sizeof(char));
+        ok = document.ParseStream(is);
+    } catch(...) {
+        return 1;
+    }
 
     if (!ok) {
         std::cout << "No ConfigFile" << std::endl;
@@ -27,14 +50,6 @@ int main() {
 
     TgBot::Bot bot(document["BotSettings"]["Token"].GetString());
 
-    /*
-        That's all that is needed to do cleanup of the used resources (RAII style).
-        Our request to be sent.
-        Set the URL.
-        Send request and get a result.
-	    By default the result goes to standard output.
-    */
-
 	curlpp::Cleanup myCleanup;
 	curlpp::Easy myRequest;
 	myRequest.setOpt<curlpp::options::Url>("https://pubmed.ncbi.nlm.nih.gov/"); // check other setOpt options
@@ -42,6 +57,11 @@ int main() {
 
     std::stringstream ss; 
     ss << myRequest; // works fine
+
+    std::string contents = ss.str();
+    GumboOutput* output = gumbo_parse(contents.c_str());
+    search_for_links(output->root);
+    gumbo_destroy_output(&kGumboDefaultOptions, output);
     
     bot.getEvents().onAnyMessage([&](TgBot::Message::Ptr msg_ptr) {
         std::string msg_txt = msg_ptr->text;
